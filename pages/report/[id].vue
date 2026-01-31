@@ -244,6 +244,39 @@ function formatPercent(value: number | undefined | null): string {
   return `${value.toFixed(2)}%`
 }
 
+// Format number with decimals
+function formatNumber(value: number | undefined | null, decimals: number = 2): string {
+  if (value === undefined || value === null) return '–'
+  return value.toFixed(decimals)
+}
+
+// Key Financial KPIs for Institutional Investors
+const rentMultiplier = computed(() => {
+  const f = displayResult.value?.financials
+  if (!f?.purchase_price || !f?.annual_rent || f.annual_rent === 0) return null
+  return f.purchase_price / f.annual_rent
+})
+
+const cashOnCashReturn = computed(() => {
+  const f = displayResult.value?.financials
+  if (!f?.annual_rent || !f?.total_investment || f.total_investment === 0) return null
+  const annualCashFlow = f.annual_rent - (f.monthly_costs ? f.monthly_costs * 12 : 0)
+  return (annualCashFlow / f.total_investment) * 100
+})
+
+const capRate = computed(() => {
+  const f = displayResult.value?.financials
+  if (!f?.annual_rent || !f?.purchase_price || f.purchase_price === 0) return null
+  const noi = f.annual_rent - (f.monthly_costs ? f.monthly_costs * 12 : 0)
+  return (noi / f.purchase_price) * 100
+})
+
+const rentToInvestmentRatio = computed(() => {
+  const f = displayResult.value?.financials
+  if (!f?.annual_rent || !f?.total_investment || f.total_investment === 0) return null
+  return (f.annual_rent / f.total_investment) * 100
+})
+
 // Generate PDF report for download
 async function downloadPDF() {
   const r = result.value
@@ -632,18 +665,6 @@ function getAmenityIcon(category: string): string {
                 ></span>
                 {{ analysis.status === 'uploaded' ? 'Uploaded' : analysis.status === 'processing' ? 'Processing' : analysis.status === 'completed' ? 'Completed' : 'Failed' }}
               </span>
-              <!-- Recommendation badge -->
-              <span
-                v-if="displayResult?.recommendation"
-                class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
-                :class="{
-                  'bg-green-100 text-green-800': displayResult.recommendation === 'kaufen',
-                  'bg-red-100 text-red-800': displayResult.recommendation === 'nicht_kaufen',
-                  'bg-amber-100 text-amber-800': displayResult.recommendation === 'pruefen',
-                }"
-              >
-                {{ displayResult.recommendation === 'kaufen' ? '✓ Buy' : displayResult.recommendation === 'nicht_kaufen' ? '✗ Don\'t Buy' : '? Review' }}
-              </span>
             </div>
           </div>
           <!-- Action buttons -->
@@ -828,6 +849,33 @@ function getAmenityIcon(category: string): string {
               <div v-if="displayResult.financials.net_yield_percent" class="bg-amber-50 rounded-lg p-4">
                 <p class="text-xs text-amber-700 uppercase tracking-wide">Net Yield</p>
                 <p class="text-lg font-bold text-amber-900 mt-1">{{ formatPercent(displayResult.financials.net_yield_percent) }}</p>
+              </div>
+            </div>
+
+            <!-- Key Investment KPIs -->
+            <div v-if="rentMultiplier || cashOnCashReturn || capRate || rentToInvestmentRatio" class="mt-6 pt-6 border-t border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Key Investment Metrics</h3>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div v-if="rentMultiplier" class="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                  <p class="text-xs text-purple-700 uppercase tracking-wide">Rent Multiplier</p>
+                  <p class="text-lg font-bold text-purple-900 mt-1">{{ formatNumber(rentMultiplier, 1) }}x</p>
+                  <p class="text-xs text-purple-600 mt-1">Years to recover investment</p>
+                </div>
+                <div v-if="cashOnCashReturn" class="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
+                  <p class="text-xs text-indigo-700 uppercase tracking-wide">Cash-on-Cash Return</p>
+                  <p class="text-lg font-bold text-indigo-900 mt-1">{{ formatPercent(cashOnCashReturn) }}</p>
+                  <p class="text-xs text-indigo-600 mt-1">Annual cash flow / Investment</p>
+                </div>
+                <div v-if="capRate" class="bg-teal-50 rounded-lg p-4 border border-teal-100">
+                  <p class="text-xs text-teal-700 uppercase tracking-wide">Cap Rate</p>
+                  <p class="text-lg font-bold text-teal-900 mt-1">{{ formatPercent(capRate) }}</p>
+                  <p class="text-xs text-teal-600 mt-1">Net operating income / Price</p>
+                </div>
+                <div v-if="rentToInvestmentRatio" class="bg-cyan-50 rounded-lg p-4 border border-cyan-100">
+                  <p class="text-xs text-cyan-700 uppercase tracking-wide">Rent-to-Investment</p>
+                  <p class="text-lg font-bold text-cyan-900 mt-1">{{ formatPercent(rentToInvestmentRatio) }}</p>
+                  <p class="text-xs text-cyan-600 mt-1">Annual rent / Total investment</p>
+                </div>
               </div>
             </div>
           </div>
