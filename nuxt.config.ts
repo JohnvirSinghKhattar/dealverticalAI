@@ -11,6 +11,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     manusApiKey: '',
     newsApiKey: '',
+    openaiApiKey: '',
     sessionSecret: '',
     public: {
       appName: 'DealVertical AI',

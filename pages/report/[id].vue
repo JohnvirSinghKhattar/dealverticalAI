@@ -61,6 +61,93 @@ interface NeighborhoodData {
 
 const pollInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
+// Language toggle state
+const currentLanguage = ref<'de' | 'en'>('de')
+const translatedResult = ref<StructuredResult | null>(null)
+const translatedNeighborhood = ref<NeighborhoodData | null>(null)
+const isTranslating = ref(false)
+const translationError = ref('')
+
+async function translateToEnglish() {
+  if (isTranslating.value || !result.value) return
+  
+  // If already translated, just switch
+  if (translatedResult.value) {
+    currentLanguage.value = 'en'
+    return
+  }
+  
+  isTranslating.value = true
+  translationError.value = ''
+  
+  try {
+    // Translate main result
+    const resultResponse = await $fetch<{ translatedText: string }>('/api/translate', {
+      method: 'POST',
+      body: {
+        text: JSON.stringify(result.value),
+        targetLanguage: 'en',
+      },
+    })
+    
+    try {
+      translatedResult.value = JSON.parse(resultResponse.translatedText)
+    } catch {
+      // If parsing fails, try to extract JSON from response
+      const jsonMatch = resultResponse.translatedText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        translatedResult.value = JSON.parse(jsonMatch[0])
+      } else {
+        throw new Error('Invalid translation response')
+      }
+    }
+    
+    // Translate neighborhood data if exists
+    if (neighborhood.value?.news?.length) {
+      const neighborhoodResponse = await $fetch<{ translatedText: string }>('/api/translate', {
+        method: 'POST',
+        body: {
+          text: JSON.stringify(neighborhood.value),
+          targetLanguage: 'en',
+        },
+      })
+      
+      try {
+        translatedNeighborhood.value = JSON.parse(neighborhoodResponse.translatedText)
+      } catch {
+        const jsonMatch = neighborhoodResponse.translatedText.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          translatedNeighborhood.value = JSON.parse(jsonMatch[0])
+        }
+      }
+    }
+    
+    currentLanguage.value = 'en'
+  } catch (err) {
+    console.error('Translation failed:', err)
+    translationError.value = 'Translation failed. Please try again.'
+  } finally {
+    isTranslating.value = false
+  }
+}
+
+function switchToGerman() {
+  currentLanguage.value = 'de'
+}
+
+// Display result based on current language
+const displayResult = computed(() => {
+  return currentLanguage.value === 'en' && translatedResult.value 
+    ? translatedResult.value 
+    : result.value
+})
+
+const displayNeighborhood = computed(() => {
+  return currentLanguage.value === 'en' && translatedNeighborhood.value 
+    ? translatedNeighborhood.value 
+    : neighborhood.value
+})
+
 async function pollForCompletion() {
   try {
     const pollResult = await $fetch<{ 
@@ -494,29 +581,62 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
               </span>
               <!-- Recommendation badge -->
               <span
-                v-if="result?.recommendation"
+                v-if="displayResult?.recommendation"
                 class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
                 :class="{
-                  'bg-green-100 text-green-800': result.recommendation === 'kaufen',
-                  'bg-red-100 text-red-800': result.recommendation === 'nicht_kaufen',
-                  'bg-amber-100 text-amber-800': result.recommendation === 'pruefen',
+                  'bg-green-100 text-green-800': displayResult.recommendation === 'kaufen',
+                  'bg-red-100 text-red-800': displayResult.recommendation === 'nicht_kaufen',
+                  'bg-amber-100 text-amber-800': displayResult.recommendation === 'pruefen',
                 }"
               >
-                {{ result.recommendation === 'kaufen' ? '✓ Buy' : result.recommendation === 'nicht_kaufen' ? '✗ Don\'t Buy' : '? Review' }}
+                {{ displayResult.recommendation === 'kaufen' ? '✓ Buy' : displayResult.recommendation === 'nicht_kaufen' ? '✗ Don\'t Buy' : '? Review' }}
               </span>
             </div>
           </div>
-          <!-- Download button -->
-          <button
-            v-if="analysis.status === 'completed' && result"
-            @click="downloadPDF"
-            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-          >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            Download PDF
-          </button>
+          <!-- Action buttons -->
+          <div v-if="analysis.status === 'completed' && result" class="flex items-center gap-3">
+            <!-- Language toggle -->
+            <div class="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                @click="switchToGerman"
+                :class="[
+                  'px-3 py-1.5 text-sm font-medium rounded-md transition-all',
+                  currentLanguage === 'de' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                ]"
+              >
+                DE
+              </button>
+              <button
+                @click="translateToEnglish"
+                :disabled="isTranslating"
+                :class="[
+                  'px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5',
+                  currentLanguage === 'en' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900',
+                  isTranslating ? 'opacity-50 cursor-wait' : ''
+                ]"
+              >
+                <svg v-if="isTranslating" class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                EN
+              </button>
+            </div>
+            <!-- Download button -->
+            <button
+              @click="downloadPDF"
+              class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Download PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -566,8 +686,18 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
       </div>
 
       <template v-else-if="analysis.status === 'completed'">
+        <!-- Translation error message -->
+        <div v-if="translationError" class="mb-4 rounded-lg bg-red-50 border border-red-200 p-4">
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm text-red-800">{{ translationError }}</p>
+          </div>
+        </div>
+
         <!-- Property Details Card -->
-        <section v-if="result?.property || hasStructuredData" class="mb-6">
+        <section v-if="displayResult?.property || hasStructuredData" class="mb-6">
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -578,32 +708,32 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
               <h2 class="text-xl font-bold text-gray-900">Property Details</h2>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div v-if="result?.property?.type" class="bg-gray-50 rounded-lg p-3">
+              <div v-if="displayResult?.property?.type" class="bg-gray-50 rounded-lg p-3">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Type</p>
-                <p class="text-sm font-semibold text-gray-900 mt-1">{{ result.property.type }}</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">{{ displayResult.property.type }}</p>
               </div>
-              <div v-if="result?.property?.size_sqm" class="bg-gray-50 rounded-lg p-3">
+              <div v-if="displayResult?.property?.size_sqm" class="bg-gray-50 rounded-lg p-3">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Size</p>
-                <p class="text-sm font-semibold text-gray-900 mt-1">{{ result.property.size_sqm }} m²</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">{{ displayResult.property.size_sqm }} m²</p>
               </div>
-              <div v-if="result?.property?.rooms" class="bg-gray-50 rounded-lg p-3">
+              <div v-if="displayResult?.property?.rooms" class="bg-gray-50 rounded-lg p-3">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Rooms</p>
-                <p class="text-sm font-semibold text-gray-900 mt-1">{{ result.property.rooms }}</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">{{ displayResult.property.rooms }}</p>
               </div>
-              <div v-if="result?.property?.year_built" class="bg-gray-50 rounded-lg p-3">
+              <div v-if="displayResult?.property?.year_built" class="bg-gray-50 rounded-lg p-3">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Year Built</p>
-                <p class="text-sm font-semibold text-gray-900 mt-1">{{ result.property.year_built }}</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">{{ displayResult.property.year_built }}</p>
               </div>
-              <div v-if="result?.property?.energy_rating" class="bg-gray-50 rounded-lg p-3">
+              <div v-if="displayResult?.property?.energy_rating" class="bg-gray-50 rounded-lg p-3">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Energy Rating</p>
-                <p class="text-sm font-semibold text-gray-900 mt-1">{{ result.property.energy_rating }}</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">{{ displayResult.property.energy_rating }}</p>
               </div>
             </div>
           </div>
         </section>
 
         <!-- Financial Overview Card -->
-        <section v-if="result?.financials" class="mb-6">
+        <section v-if="displayResult?.financials" class="mb-6">
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
@@ -614,47 +744,47 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
               <h2 class="text-xl font-bold text-gray-900">Financial Overview</h2>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div v-if="result.financials.purchase_price" class="bg-green-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.purchase_price" class="bg-green-50 rounded-lg p-4">
                 <p class="text-xs text-green-700 uppercase tracking-wide">Purchase Price</p>
-                <p class="text-lg font-bold text-green-900 mt-1">{{ formatCurrency(result.financials.purchase_price) }}</p>
+                <p class="text-lg font-bold text-green-900 mt-1">{{ formatCurrency(displayResult.financials.purchase_price) }}</p>
               </div>
-              <div v-if="result.financials.total_investment" class="bg-green-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.total_investment" class="bg-green-50 rounded-lg p-4">
                 <p class="text-xs text-green-700 uppercase tracking-wide">Total Investment</p>
-                <p class="text-lg font-bold text-green-900 mt-1">{{ formatCurrency(result.financials.total_investment) }}</p>
+                <p class="text-lg font-bold text-green-900 mt-1">{{ formatCurrency(displayResult.financials.total_investment) }}</p>
               </div>
-              <div v-if="result.financials.price_per_sqm" class="bg-gray-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.price_per_sqm" class="bg-gray-50 rounded-lg p-4">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Price per m²</p>
-                <p class="text-lg font-bold text-gray-900 mt-1">{{ formatCurrency(result.financials.price_per_sqm) }}</p>
+                <p class="text-lg font-bold text-gray-900 mt-1">{{ formatCurrency(displayResult.financials.price_per_sqm) }}</p>
               </div>
-              <div v-if="result.financials.monthly_rent" class="bg-blue-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.monthly_rent" class="bg-blue-50 rounded-lg p-4">
                 <p class="text-xs text-blue-700 uppercase tracking-wide">Monthly Rent</p>
-                <p class="text-lg font-bold text-blue-900 mt-1">{{ formatCurrency(result.financials.monthly_rent) }}</p>
+                <p class="text-lg font-bold text-blue-900 mt-1">{{ formatCurrency(displayResult.financials.monthly_rent) }}</p>
               </div>
-              <div v-if="result.financials.annual_rent" class="bg-blue-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.annual_rent" class="bg-blue-50 rounded-lg p-4">
                 <p class="text-xs text-blue-700 uppercase tracking-wide">Annual Rent</p>
-                <p class="text-lg font-bold text-blue-900 mt-1">{{ formatCurrency(result.financials.annual_rent) }}</p>
+                <p class="text-lg font-bold text-blue-900 mt-1">{{ formatCurrency(displayResult.financials.annual_rent) }}</p>
               </div>
-              <div v-if="result.financials.monthly_costs" class="bg-gray-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.monthly_costs" class="bg-gray-50 rounded-lg p-4">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Monthly Costs</p>
-                <p class="text-lg font-bold text-gray-900 mt-1">{{ formatCurrency(result.financials.monthly_costs) }}</p>
+                <p class="text-lg font-bold text-gray-900 mt-1">{{ formatCurrency(displayResult.financials.monthly_costs) }}</p>
               </div>
-              <div v-if="result.financials.gross_yield_percent" class="bg-amber-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.gross_yield_percent" class="bg-amber-50 rounded-lg p-4">
                 <p class="text-xs text-amber-700 uppercase tracking-wide">Gross Yield</p>
-                <p class="text-lg font-bold text-amber-900 mt-1">{{ formatPercent(result.financials.gross_yield_percent) }}</p>
+                <p class="text-lg font-bold text-amber-900 mt-1">{{ formatPercent(displayResult.financials.gross_yield_percent) }}</p>
               </div>
-              <div v-if="result.financials.net_yield_percent" class="bg-amber-50 rounded-lg p-4">
+              <div v-if="displayResult.financials.net_yield_percent" class="bg-amber-50 rounded-lg p-4">
                 <p class="text-xs text-amber-700 uppercase tracking-wide">Net Yield</p>
-                <p class="text-lg font-bold text-amber-900 mt-1">{{ formatPercent(result.financials.net_yield_percent) }}</p>
+                <p class="text-lg font-bold text-amber-900 mt-1">{{ formatPercent(displayResult.financials.net_yield_percent) }}</p>
               </div>
             </div>
           </div>
         </section>
 
         <!-- Pros & Cons Card -->
-        <section v-if="result?.pros?.length || result?.cons?.length" class="mb-6">
+        <section v-if="displayResult?.pros?.length || displayResult?.cons?.length" class="mb-6">
           <div class="grid md:grid-cols-2 gap-6">
             <!-- Pros -->
-            <div v-if="result?.pros?.length" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div v-if="displayResult?.pros?.length" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <div class="flex items-center gap-3 mb-4">
                 <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                   <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -664,14 +794,14 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
                 <h2 class="text-xl font-bold text-gray-900">Pros</h2>
               </div>
               <ul class="space-y-2">
-                <li v-for="(pro, i) in result.pros" :key="i" class="flex items-start gap-2">
+                <li v-for="(pro, i) in displayResult.pros" :key="i" class="flex items-start gap-2">
                   <span class="text-green-500 mt-0.5">✓</span>
                   <span class="text-gray-700">{{ pro }}</span>
                 </li>
               </ul>
             </div>
             <!-- Cons -->
-            <div v-if="result?.cons?.length" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div v-if="displayResult?.cons?.length" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <div class="flex items-center gap-3 mb-4">
                 <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
                   <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -681,7 +811,7 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
                 <h2 class="text-xl font-bold text-gray-900">Cons</h2>
               </div>
               <ul class="space-y-2">
-                <li v-for="(con, i) in result.cons" :key="i" class="flex items-start gap-2">
+                <li v-for="(con, i) in displayResult.cons" :key="i" class="flex items-start gap-2">
                   <span class="text-red-500 mt-0.5">✗</span>
                   <span class="text-gray-700">{{ con }}</span>
                 </li>
@@ -691,7 +821,7 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
         </section>
 
         <!-- Risks Card -->
-        <section v-if="result?.risks?.length" class="mb-6">
+        <section v-if="displayResult?.risks?.length" class="mb-6">
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
@@ -702,7 +832,7 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
               <h2 class="text-xl font-bold text-gray-900">Risk Assessment</h2>
             </div>
             <div class="space-y-3">
-              <div v-for="(risk, i) in result.risks" :key="i" class="bg-amber-50 rounded-lg p-4">
+              <div v-for="(risk, i) in displayResult.risks" :key="i" class="bg-amber-50 rounded-lg p-4">
                 <p class="text-sm font-semibold text-amber-900">{{ risk.category || 'Risk' }}</p>
                 <p class="text-sm text-amber-800 mt-1">{{ risk.description }}</p>
               </div>
@@ -711,7 +841,7 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
         </section>
 
         <!-- Summary Card -->
-        <section v-if="result?.summary" class="mb-6">
+        <section v-if="displayResult?.summary" class="mb-6">
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -721,12 +851,12 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
               </div>
               <h2 class="text-xl font-bold text-gray-900">Summary</h2>
             </div>
-            <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{{ result.summary }}</p>
+            <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{{ displayResult.summary }}</p>
           </div>
         </section>
 
         <!-- Legacy format fallback (for old analyses) -->
-        <section v-if="!hasStructuredData && result" class="mb-6">
+        <section v-if="!hasStructuredData && displayResult" class="mb-6">
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -736,11 +866,11 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
               </div>
               <h2 class="text-xl font-bold text-gray-900">Analysis Results</h2>
             </div>
-            <div class="whitespace-pre-wrap text-gray-700 leading-relaxed">{{ result.summary || JSON.stringify(result, null, 2) }}</div>
+            <div class="whitespace-pre-wrap text-gray-700 leading-relaxed">{{ displayResult.summary || JSON.stringify(displayResult, null, 2) }}</div>
           </div>
         </section>
 
-        <section v-if="neighborhood?.news?.length">
+        <section v-if="displayNeighborhood?.news?.length">
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
@@ -753,14 +883,14 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
                 <h2 class="text-xl font-bold text-gray-900">
                   Neighborhood Intelligence
                 </h2>
-                <p v-if="neighborhood.address" class="text-sm text-gray-500">
-                  {{ neighborhood.address }}
+                <p v-if="displayNeighborhood.address" class="text-sm text-gray-500">
+                  {{ displayNeighborhood.address }}
                 </p>
               </div>
             </div>
             <div class="mt-4 space-y-3">
               <a
-                v-for="(n, i) in neighborhood.news"
+                v-for="(n, i) in displayNeighborhood.news"
                 :key="i"
                 :href="n.url"
                 target="_blank"

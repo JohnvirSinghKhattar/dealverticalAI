@@ -87,6 +87,9 @@ NUXT_MANUS_API_KEY=your-manus-api-key
 
 # NewsAPI (optional, for neighborhood news)
 NUXT_NEWS_API_KEY=your-newsapi-key
+
+# OpenAI API (optional, for English translation)
+NUXT_OPENAI_API_KEY=your-openai-api-key
 ```
 
 ### Run Development Server
@@ -149,6 +152,7 @@ The upload page includes sample data for testing:
 - [x] **PDF Export** – Download analysis as PDF report
 - [x] **Dashboard** – View all past analyses
 - [x] **Sample Data** – Try the app with included sample exposé
+- [x] **Language Toggle** – Switch between German and English report (OpenAI translation)
 
 ---
 
@@ -195,6 +199,7 @@ The following APIs and data sources could enhance the analysis to institutional 
 | Turso | Database | [turso.tech](https://turso.tech) |
 | Manus | PDF Analysis | [open.manus.im](https://open.manus.im/docs) |
 | NewsAPI | Local News | [newsapi.org](https://newsapi.org) |
+| OpenAI | Translation (DE↔EN) | [platform.openai.com](https://platform.openai.com/api-keys) |
 
 ---
 
