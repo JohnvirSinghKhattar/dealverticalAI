@@ -1,12 +1,8 @@
-import { getRawDb } from '../db'
-import { join } from 'path'
-import { mkdirSync, existsSync } from 'fs'
+import { getClient_ } from '../db'
 
-export default defineNitroPlugin(() => {
-  const dataDir = join(process.cwd(), 'data')
-  if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true })
-  const sqlite = getRawDb()
-  sqlite.exec(`
+export default defineNitroPlugin(async () => {
+  const client = getClient_()
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS analyses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       address TEXT,

@@ -10,7 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
+    "@libsql/client": "^0.6.0",
     "drizzle-orm": "^0.36.0",
     "h3": "^1.12.0",
     "jspdf": "4.0.0",
@@ -22,7 +22,6 @@
   "devDependencies": {
     "@nuxt/devtools": "latest",
     "@nuxtjs/tailwindcss": "^6.12.0",
-    "@types/better-sqlite3": "^7.6.11",
     "drizzle-kit": "^0.28.0",
     "nuxt": "^3.14.0",
     "typescript": "latest"

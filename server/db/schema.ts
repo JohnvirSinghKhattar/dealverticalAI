@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+// Using drizzle-orm/libsql for Turso - sqlite-core schema is compatible
 
 export const analyses = sqliteTable('analyses', {
   id: integer('id').primaryKey({ autoIncrement: true }),
