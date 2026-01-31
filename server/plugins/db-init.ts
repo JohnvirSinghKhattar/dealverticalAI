@@ -20,6 +20,7 @@ export default defineNitroPlugin(async () => {
           status TEXT NOT NULL DEFAULT 'uploaded',
           result_json TEXT,
           neighborhood_json TEXT,
+          amenities_json TEXT,
           created_at INTEGER
         )
       `)
@@ -38,6 +39,7 @@ export default defineNitroPlugin(async () => {
           status TEXT NOT NULL DEFAULT 'uploaded',
           result_json TEXT,
           neighborhood_json TEXT,
+          amenities_json TEXT,
           created_at INTEGER
         )
       `)
@@ -45,6 +47,12 @@ export default defineNitroPlugin(async () => {
       await client.execute(`DROP TABLE analyses_old`)
       console.log('[DB] Migration complete - old data cleared (incompatible schema)')
     } else {
+      // Check for missing columns and add them
+      if (!columns.includes('amenities_json')) {
+        console.log('[DB] Adding amenities_json column...')
+        await client.execute(`ALTER TABLE analyses ADD COLUMN amenities_json TEXT`)
+        console.log('[DB] Added amenities_json column')
+      }
       console.log('[DB] Database schema is up to date')
     }
   } catch (error) {
