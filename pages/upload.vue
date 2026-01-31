@@ -50,50 +50,81 @@ async function submit() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-xl">
-    <h1 class="text-2xl font-bold text-gray-900">
-      Upload Exposé
-    </h1>
-    <p class="mt-1 text-gray-600">
-      Upload a PDF with address, text and images. Optionally enter the address for neighborhood news and context.
-    </p>
+  <div class="mx-auto max-w-2xl">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">
+        Upload Property Exposé
+      </h1>
+      <p class="mt-3 text-gray-600">
+        Upload your German property exposé (PDF) to receive a comprehensive AI-powered analysis. Optionally provide the property address for enhanced neighborhood insights.
+      </p>
+    </div>
 
-    <form class="mt-6 space-y-4" @submit.prevent="submit">
+    <form class="mt-8 space-y-6 bg-white rounded-xl border border-gray-200 shadow-sm p-8" @submit.prevent="submit">
       <div>
-        <label class="block text-sm font-medium text-gray-700">Address (optional, for local news)</label>
+        <label class="block text-sm font-semibold text-gray-900 mb-2">
+          Property Address
+          <span class="text-gray-500 font-normal">(Optional)</span>
+        </label>
+        <p class="text-xs text-gray-500 mb-2">Provide the address to include local news and neighborhood insights in your analysis</p>
         <input
           v-model="address"
           type="text"
-          placeholder="e.g. Hamburg-Altona, Große Bergstraße 1"
-          class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          placeholder="e.g. Große Bergstraße 1, 22767 Hamburg"
+          class="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all"
         />
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700">PDF (Exposé)</label>
-        <p class="text-xs text-slate-500">German property brochure / Exposé</p>
-        <input
-          type="file"
-          accept="application/pdf"
-          class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-blue-700 hover:file:bg-blue-100"
-          @change="onFileChange"
-        />
-        <p v-if="file" class="mt-1 text-sm text-gray-500">
-          {{ file.name }} ({{ (file.size / 1024).toFixed(1) }} KB)
-        </p>
+        <label class="block text-sm font-semibold text-gray-900 mb-2">
+          Property Exposé (PDF)
+          <span class="text-red-500">*</span>
+        </label>
+        <p class="text-xs text-gray-500 mb-3">Upload your German property brochure or exposé document (max 10 MB)</p>
+        <div class="relative">
+          <input
+            type="file"
+            accept="application/pdf"
+            class="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-600 file:px-6 file:py-3 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-700 file:transition-colors cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors"
+            @change="onFileChange"
+          />
+        </div>
+        <div v-if="file" class="mt-3 flex items-center gap-2 text-sm text-gray-700 bg-blue-50 rounded-lg p-3">
+          <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span class="font-medium">{{ file.name }}</span>
+          <span class="text-gray-500">({{ (file.size / 1024).toFixed(1) }} KB)</span>
+        </div>
       </div>
 
-      <p v-if="error" class="text-sm text-red-600">
-        {{ error }}
-      </p>
+      <div v-if="error" class="rounded-lg bg-red-50 border border-red-200 p-4">
+        <div class="flex items-start gap-3">
+          <svg class="h-5 w-5 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-sm text-red-800 font-medium">{{ error }}</p>
+        </div>
+      </div>
 
       <button
         type="submit"
-        :disabled="uploading"
-        class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        :disabled="uploading || !file"
+        class="w-full rounded-lg bg-blue-600 px-6 py-4 text-base font-semibold text-white shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl flex items-center justify-center gap-2"
       >
-        {{ uploading ? 'Uploading…' : 'Upload and analyse' }}
+        <svg v-if="uploading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        {{ uploading ? 'Analyzing Your Property...' : 'Start Analysis' }}
       </button>
+      
+      <p class="text-xs text-center text-gray-500">
+        Your document will be analyzed using AI to extract financial data, investment insights, and neighborhood information
+      </p>
     </form>
   </div>
 </template>

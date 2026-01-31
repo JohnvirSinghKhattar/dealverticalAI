@@ -19,8 +19,14 @@ export async function fetchLocalNews(
     pageSize: String(limit),
     apiKey,
   })
-  const res = await fetch(`https://newsapi.org/v2/everything?${params}`)
-  if (!res.ok) return []
+  const url = `https://newsapi.org/v2/everything?${params}`
+  console.log('[NEWS] Fetching from NewsAPI:', url.replace(apiKey, 'API_KEY_HIDDEN'))
+  const res = await fetch(url)
+  if (!res.ok) {
+    const errorText = await res.text()
+    console.error('[NEWS] NewsAPI request failed:', res.status, errorText)
+    return []
+  }
   const data = (await res.json()) as {
     articles?: Array<{
       title: string

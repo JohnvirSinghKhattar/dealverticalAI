@@ -10,19 +10,21 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "drizzle-orm": "^0.36.0",
+    "h3": "^1.12.0",
+    "jspdf": "4.0.0",
+    "jspdf-autotable": "5.0.7",
     "nuxt": "^3.14.0",
     "vue": "latest",
-    "vue-router": "latest",
-    "h3": "^1.12.0",
-    "drizzle-orm": "^0.36.0",
-    "better-sqlite3": "^11.0.0"
+    "vue-router": "latest"
   },
   "devDependencies": {
-    "nuxt": "^3.14.0",
     "@nuxt/devtools": "latest",
     "@nuxtjs/tailwindcss": "^6.12.0",
-    "typescript": "latest",
+    "@types/better-sqlite3": "^7.6.11",
     "drizzle-kit": "^0.28.0",
-    "@types/better-sqlite3": "^7.6.11"
+    "nuxt": "^3.14.0",
+    "typescript": "latest"
   }
 }

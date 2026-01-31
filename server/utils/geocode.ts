@@ -8,6 +8,7 @@ export interface GeocodeResult {
     city?: string
     town?: string
     village?: string
+    postcode?: string
     state?: string
     country?: string
   }
@@ -42,4 +43,15 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
 export function getCityFromGeocode(geo: GeocodeResult): string {
   const a = geo.address
   return a?.city ?? a?.town ?? a?.village ?? ''
+}
+
+export function extractPostcode(address: string, geo?: GeocodeResult | null): string {
+  // Try to get postcode from geocode result first
+  if (geo?.address?.postcode) {
+    return geo.address.postcode
+  }
+  
+  // Fallback: extract German postcode (5 digits) from address string
+  const postcodeMatch = address.match(/\b(\d{5})\b/)
+  return postcodeMatch ? postcodeMatch[1] : ''
 }
