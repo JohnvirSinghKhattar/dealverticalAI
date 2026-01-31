@@ -147,12 +147,18 @@ The upload page includes sample data for testing:
 - [x] **PDF Upload** – Upload German property exposés (max 10 MB)
 - [x] **AI Analysis (Manus)** – Extract financials, pros/cons, investment recommendation
 - [x] **Structured Report** – Property details, financial KPIs, risk assessment
+- [x] **Key Investment Metrics** – Institutional-grade KPIs for real estate investors:
+- [x] **Rent Multiplier** – Years to recover investment through rental income
+- [x] **Cash-on-Cash Return** – Annual cash flow as % of total investment
+- [x] **Cap Rate** – Net operating income divided by purchase price
+- [x] **Rent-to-Investment Ratio** – Annual rent as % of total investment
 - [x] **Local News** – Fetch regional news with sentiment classification (positive/negative/neutral)
 - [x] **Geocoding** – Address to coordinates via Nominatim
 - [x] **PDF Export** – Download analysis as PDF report
 - [x] **Dashboard** – View all past analyses
 - [x] **Sample Data** – Try the app with included sample exposé
 - [x] **Language Toggle** – Switch between German and English report (OpenAI translation)
+- [x] **Clean Report Header** – Streamlined status display (Completed/Processing only)
 
 ---
 
@@ -179,7 +185,7 @@ The following APIs and data sources could enhance the analysis to institutional 
 - [ ] **School Quality Ratings** – Education rankings by district
 
 ### Infrastructure & Development
-- [ ] **OpenStreetMap Overpass** – POIs, amenities, transport links
+- [x] **OpenStreetMap Overpass** – POIs, amenities, transport links
 - [ ] **Deutsche Bahn API** – Public transport connectivity scores
 - [ ] **Building Permits Data** – New construction activity in area
 - [ ] **Urban Development Plans** – Bebauungspläne, zoning changes
