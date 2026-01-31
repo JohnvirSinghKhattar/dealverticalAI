@@ -52,30 +52,30 @@ async function submit() {
 <template>
   <div class="mx-auto max-w-2xl">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">
+      <h1 class="text-3xl font-bold text-white">
         Upload Property Exposé
       </h1>
-      <p class="mt-3 text-gray-600">
+      <p class="mt-3 text-blue-100">
         Upload your German property exposé (PDF) to receive a comprehensive AI-powered analysis. Optionally provide the property address for enhanced neighborhood insights.
       </p>
     </div>
 
     <!-- Sample Data Section -->
-    <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+    <div class="mb-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-5">
       <div class="flex items-start gap-3">
-        <div class="flex-shrink-0 p-2 bg-blue-100 rounded-lg">
-          <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex-shrink-0 p-2 bg-white/20 rounded-lg">
+          <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div class="flex-1">
-          <h3 class="text-sm font-semibold text-gray-900 mb-1">First time? Try with sample data</h3>
-          <p class="text-xs text-gray-600 mb-3">Download our sample exposé PDF and use the sample address to see how the analysis works.</p>
+          <h3 class="text-sm font-semibold text-white mb-1">First time? Try with sample data</h3>
+          <p class="text-xs text-blue-100 mb-3">Download our sample exposé PDF and use the sample address to see how the analysis works.</p>
           <div class="flex flex-wrap gap-2">
             <a 
               href="/SAMPLE-EXPOSE.pdf" 
               download="SAMPLE-EXPOSE.pdf"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-white border border-white/50 rounded-lg hover:bg-blue-50 transition-colors"
             >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -84,7 +84,7 @@ async function submit() {
             </a>
             <button 
               type="button"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-white/50 rounded-lg hover:bg-indigo-50 transition-colors"
               @click="address = 'Finkenschlag 13-15, 21109 Hamburg'"
             >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
