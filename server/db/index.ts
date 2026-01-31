@@ -1,22 +1,32 @@
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
 import * as schema from './schema'
-import { join } from 'path'
 
-const dbPath = join(process.cwd(), 'data', 'dealvertical.db')
-let _sqlite: Database.Database | null = null
+let _client: ReturnType<typeof createClient> | null = null
 
-function getSqlite() {
-  if (!_sqlite) _sqlite = new Database(dbPath)
-  return _sqlite
+function getClient() {
+  if (!_client) {
+    const url = process.env.TURSO_DATABASE_URL
+    const authToken = process.env.TURSO_AUTH_TOKEN
+
+    if (!url) {
+      throw new Error('TURSO_DATABASE_URL environment variable is not set')
+    }
+
+    _client = createClient({
+      url,
+      authToken,
+    })
+  }
+  return _client
 }
 
 export function getDb() {
-  return drizzle(getSqlite(), { schema })
+  return drizzle(getClient(), { schema })
 }
 
-export function getRawDb() {
-  return getSqlite()
+export function getClient_() {
+  return getClient()
 }
 
 export * from './schema'
