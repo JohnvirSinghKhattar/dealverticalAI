@@ -31,7 +31,7 @@ export async function uploadFileToManus(
     headers: {
       'Content-Type': mimeType,
     },
-    body: fileBuffer,
+    body: new Uint8Array(fileBuffer),
   })
   if (!putRes.ok) {
     const err = await putRes.text()

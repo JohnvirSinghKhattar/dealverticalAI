@@ -30,7 +30,7 @@ async function submit() {
   try {
     const form = new FormData()
     form.append('file', file.value)
-    const res = await $fetch<{ id: number; filePath: string }>('/api/upload', {
+    const res = await $fetch<{ id: number; fileName: string }>('/api/upload', {
       method: 'POST',
       body: form,
     })

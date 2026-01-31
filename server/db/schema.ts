@@ -4,7 +4,8 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 export const analyses = sqliteTable('analyses', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   address: text('address'),
-  filePath: text('file_path').notNull(),
+  fileName: text('file_name').notNull(),
+  fileData: text('file_data').notNull(), // PDF stored as base64
   manusTaskId: text('manus_task_id'),
   status: text('status').notNull().default('uploaded'), // uploaded | processing | completed | failed
   resultJson: text('result_json'), // Manus analysis result

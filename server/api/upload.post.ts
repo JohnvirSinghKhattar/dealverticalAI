@@ -1,8 +1,4 @@
-import { writeFileSync, mkdirSync, existsSync } from 'fs'
-import { join } from 'path'
-
 const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
-const UPLOAD_DIR = join(process.cwd(), 'data', 'uploads')
 
 export default defineEventHandler(async (event) => {
   const form = await readMultipartFormData(event)
@@ -20,21 +16,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'File too large (max 10 MB)' })
   }
 
-  if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true })
-  const filename = `expose-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`
-  const filePath = join(UPLOAD_DIR, filename)
-  writeFileSync(filePath, file.data)
+  // Store file as base64 in database (no filesystem writes for Vercel compatibility)
+  const fileName = `expose-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`
+  const fileData = file.data.toString('base64')
 
   const { getDb, analyses } = await import('../db')
   const db = getDb()
   
-  // Explicitly construct the insert values
   const insertValues = {
-    filePath: filename,
+    fileName,
+    fileData,
     status: 'uploaded' as const,
   }
   
-  console.log('[UPLOAD] Attempting to insert with values:', insertValues)
+  console.log('[UPLOAD] Storing PDF in database, size:', file.data.length, 'bytes')
   
   let row
   try {
@@ -42,11 +37,11 @@ export default defineEventHandler(async (event) => {
     row = inserted[0]
     if (!row) throw createError({ statusCode: 500, message: 'Insert failed' })
     
-    console.log('[UPLOAD] Successfully inserted row:', row)
+    console.log('[UPLOAD] Successfully inserted row:', row.id)
   } catch (err) {
     console.error('[UPLOAD] Insert failed with error:', err)
     throw err
   }
 
-  return { id: row.id, filePath: filename }
+  return { id: row.id, fileName }
 })

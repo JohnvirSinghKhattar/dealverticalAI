@@ -2,7 +2,7 @@
 interface AnalysisData {
   id: number
   address: string | null
-  filePath: string
+  fileName: string
   status: string
   createdAt: string | null
   resultJson?: string | null

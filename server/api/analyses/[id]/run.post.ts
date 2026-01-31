@@ -1,14 +1,11 @@
 import { getDb } from '../../../db'
 import { analyses } from '../../../db/schema'
 import { eq } from 'drizzle-orm'
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
 import { uploadFileToManus, createAnalysisTask, getTaskResult } from '../../../utils/manus'
 import { geocodeAddress, extractPostcode } from '../../../utils/geocode'
 import { fetchLocalNews } from '../../../utils/news'
 
 const config = useRuntimeConfig()
-const UPLOAD_DIR = join(process.cwd(), 'data', 'uploads')
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -22,8 +19,7 @@ export default defineEventHandler(async (event) => {
     return { status: 'processing', manusTaskId: row.manusTaskId }
   }
 
-  const fullPath = join(UPLOAD_DIR, row.filePath)
-  if (!existsSync(fullPath)) throw createError({ statusCode: 404, message: 'File not found' })
+  if (!row.fileData) throw createError({ statusCode: 404, message: 'File data not found' })
 
   const manusApiKey = config.manusApiKey
   if (!manusApiKey) throw createError({ statusCode: 503, message: 'Manus API not configured' })
@@ -94,10 +90,10 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Step 2: Upload file to Manus
-    const fileBuffer = readFileSync(fullPath)
-    console.log('[RUN] Uploading file to Manus...')
-    const fileRes = await uploadFileToManus(manusApiKey, fileBuffer, row.filePath)
+    // Step 2: Upload file to Manus (read from database base64)
+    const fileBuffer = Buffer.from(row.fileData, 'base64')
+    console.log('[RUN] Uploading file to Manus, size:', fileBuffer.length, 'bytes')
+    const fileRes = await uploadFileToManus(manusApiKey, fileBuffer, row.fileName)
     const fileId = (fileRes as { id: string }).id
     
     if (!fileId) {

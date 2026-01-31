@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   return {
     id: row.id,
     address: row.address,
-    filePath: row.filePath,
+    fileName: row.fileName,
     status: row.status,
     resultJson: row.resultJson ? JSON.parse(row.resultJson) : null,
     neighborhoodJson: row.neighborhoodJson ? JSON.parse(row.neighborhoodJson) : null,
