@@ -1,0 +1,28 @@
+{
+  "name": "dealvertical-ai",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "nuxt": "^3.14.0",
+    "vue": "latest",
+    "vue-router": "latest",
+    "h3": "^1.12.0",
+    "drizzle-orm": "^0.36.0",
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "nuxt": "^3.14.0",
+    "@nuxt/devtools": "latest",
+    "@nuxtjs/tailwindcss": "^6.12.0",
+    "typescript": "latest",
+    "drizzle-kit": "^0.28.0",
+    "@types/better-sqlite3": "^7.6.11"
+  }
+}
