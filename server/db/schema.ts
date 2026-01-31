@@ -10,6 +10,7 @@ export const analyses = sqliteTable('analyses', {
   status: text('status').notNull().default('uploaded'), // uploaded | processing | completed | failed
   resultJson: text('result_json'), // Manus analysis result
   neighborhoodJson: text('neighborhood_json'), // crime + news
+  amenitiesJson: text('amenities_json'), // nearby amenities from OpenStreetMap
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 })
 

@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     status: row.status,
     resultJson: row.resultJson ? JSON.parse(row.resultJson) : null,
     neighborhoodJson: row.neighborhoodJson ? JSON.parse(row.neighborhoodJson) : null,
+    amenitiesJson: row.amenitiesJson ? JSON.parse(row.amenitiesJson) : null,
     createdAt: row.createdAt,
   }
 })

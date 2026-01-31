@@ -7,9 +7,31 @@ interface AnalysisData {
   createdAt: string | null
   resultJson?: string | null
   neighborhoodJson?: string | null
+  amenitiesJson?: string | null
   progress?: number
   currentStep?: string
   manusTaskUrl?: string
+}
+
+interface Amenity {
+  type: string
+  name: string
+  lat: number
+  lon: number
+  distance: number
+  category: string
+}
+
+interface AmenitiesData {
+  schools: Amenity[]
+  groceryStores: Amenity[]
+  doctors: Amenity[]
+  pharmacies: Amenity[]
+  publicTransport: Amenity[]
+  restaurants: Amenity[]
+  parks: Amenity[]
+  banks: Amenity[]
+  fetchedAt: string
 }
 
 const route = useRoute()
@@ -526,6 +548,37 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
     return null
   }
 })
+
+const amenities = computed<AmenitiesData | null>(() => {
+  const a = analysis.value
+  if (!a?.amenitiesJson) return null
+  try {
+    return typeof a.amenitiesJson === 'string' ? JSON.parse(a.amenitiesJson) : a.amenitiesJson
+  } catch {
+    return null
+  }
+})
+
+function formatDistance(meters: number): string {
+  if (meters < 1000) {
+    return `${meters} m`
+  }
+  return `${(meters / 1000).toFixed(1)} km`
+}
+
+function getAmenityIcon(category: string): string {
+  const icons: Record<string, string> = {
+    school: '🏫',
+    grocery: '🛒',
+    doctor: '🏥',
+    pharmacy: '💊',
+    public_transport: '🚌',
+    restaurant: '🍽️',
+    park: '🌳',
+    bank: '🏦',
+  }
+  return icons[category] || '📍'
+}
 </script>
 
 <template>
@@ -867,6 +920,169 @@ const neighborhood = computed<NeighborhoodData | null>(() => {
               <h2 class="text-xl font-bold text-gray-900">Analysis Results</h2>
             </div>
             <div class="whitespace-pre-wrap text-gray-700 leading-relaxed">{{ displayResult.summary || JSON.stringify(displayResult, null, 2) }}</div>
+          </div>
+        </section>
+
+        <!-- Nearby Amenities Card -->
+        <section v-if="amenities" class="mb-6">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
+                <svg class="h-5 w-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-900">Nearby Amenities</h2>
+                <p class="text-sm text-gray-500">Distances calculated from property location (2km radius)</p>
+              </div>
+            </div>
+            
+            <!-- Quick Summary -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+              <div v-if="amenities.schools?.length" class="bg-teal-50 rounded-lg p-3 text-center">
+                <span class="text-2xl">🏫</span>
+                <p class="text-xs text-teal-700 mt-1">Nearest School</p>
+                <p class="text-sm font-bold text-teal-900">{{ formatDistance(amenities.schools[0].distance) }}</p>
+              </div>
+              <div v-if="amenities.groceryStores?.length" class="bg-teal-50 rounded-lg p-3 text-center">
+                <span class="text-2xl">🛒</span>
+                <p class="text-xs text-teal-700 mt-1">Nearest Grocery</p>
+                <p class="text-sm font-bold text-teal-900">{{ formatDistance(amenities.groceryStores[0].distance) }}</p>
+              </div>
+              <div v-if="amenities.doctors?.length" class="bg-teal-50 rounded-lg p-3 text-center">
+                <span class="text-2xl">🏥</span>
+                <p class="text-xs text-teal-700 mt-1">Nearest Doctor</p>
+                <p class="text-sm font-bold text-teal-900">{{ formatDistance(amenities.doctors[0].distance) }}</p>
+              </div>
+              <div v-if="amenities.pharmacies?.length" class="bg-teal-50 rounded-lg p-3 text-center">
+                <span class="text-2xl">💊</span>
+                <p class="text-xs text-teal-700 mt-1">Nearest Pharmacy</p>
+                <p class="text-sm font-bold text-teal-900">{{ formatDistance(amenities.pharmacies[0].distance) }}</p>
+              </div>
+              <div v-if="amenities.publicTransport?.length" class="bg-teal-50 rounded-lg p-3 text-center">
+                <span class="text-2xl">🚌</span>
+                <p class="text-xs text-teal-700 mt-1">Nearest Transit</p>
+                <p class="text-sm font-bold text-teal-900">{{ formatDistance(amenities.publicTransport[0].distance) }}</p>
+              </div>
+              <div v-if="amenities.parks?.length" class="bg-teal-50 rounded-lg p-3 text-center">
+                <span class="text-2xl">🌳</span>
+                <p class="text-xs text-teal-700 mt-1">Nearest Park</p>
+                <p class="text-sm font-bold text-teal-900">{{ formatDistance(amenities.parks[0].distance) }}</p>
+              </div>
+            </div>
+
+            <!-- Detailed Lists -->
+            <div class="grid md:grid-cols-2 gap-6">
+              <!-- Schools -->
+              <div v-if="amenities.schools?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>🏫</span> Schools & Kindergartens
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.schools" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Grocery Stores -->
+              <div v-if="amenities.groceryStores?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>🛒</span> Grocery Stores
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.groceryStores" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Doctors -->
+              <div v-if="amenities.doctors?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>🏥</span> Doctors & Clinics
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.doctors" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Pharmacies -->
+              <div v-if="amenities.pharmacies?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>💊</span> Pharmacies
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.pharmacies" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Public Transport -->
+              <div v-if="amenities.publicTransport?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>🚌</span> Public Transport
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.publicTransport.slice(0, 5)" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Parks -->
+              <div v-if="amenities.parks?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>🌳</span> Parks & Playgrounds
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.parks" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Restaurants -->
+              <div v-if="amenities.restaurants?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>🍽️</span> Restaurants & Cafés
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.restaurants.slice(0, 5)" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Banks -->
+              <div v-if="amenities.banks?.length">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <span>🏦</span> Banks & ATMs
+                </h3>
+                <ul class="space-y-2">
+                  <li v-for="(item, i) in amenities.banks" :key="i" class="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                    <span class="text-gray-700 truncate mr-2">{{ item.name }}</span>
+                    <span class="text-teal-600 font-medium whitespace-nowrap">{{ formatDistance(item.distance) }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-400 mt-4 text-right">
+              Data from OpenStreetMap • Updated {{ amenities.fetchedAt ? new Date(amenities.fetchedAt).toLocaleDateString('en-GB') : 'recently' }}
+            </p>
           </div>
         </section>
 

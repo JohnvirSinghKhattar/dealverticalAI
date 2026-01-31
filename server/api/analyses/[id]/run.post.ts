@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { uploadFileToManus, createAnalysisTask, getTaskResult } from '../../../utils/manus'
 import { geocodeAddress, extractPostcode } from '../../../utils/geocode'
 import { fetchLocalNews } from '../../../utils/news'
+import { fetchNearbyAmenities } from '../../../utils/amenities'
 
 const config = useRuntimeConfig()
 
@@ -37,10 +38,37 @@ export default defineEventHandler(async (event) => {
     
     console.log('[RUN] News API check - address:', !!address, '| newsApiKey:', !!config.newsApiKey, '| address value:', address)
     
+    // Step 1a: Geocode address first (needed for both news and amenities)
+    let geo: Awaited<ReturnType<typeof geocodeAddress>> = null
+    let amenitiesJson: string | undefined
+    
+    if (address) {
+      try {
+        console.log('[RUN] Geocoding address:', address)
+        geo = await geocodeAddress(address)
+        
+        if (geo) {
+          console.log('[RUN] Geocoded to:', geo.lat, geo.lon)
+          
+          // Fetch nearby amenities from OpenStreetMap Overpass API
+          try {
+            console.log('[RUN] Fetching nearby amenities...')
+            const amenities = await fetchNearbyAmenities(geo.lat, geo.lon, 2000)
+            amenitiesJson = JSON.stringify(amenities)
+            console.log('[RUN] Amenities fetched successfully')
+          } catch (amenitiesErr) {
+            console.error('[RUN] Amenities fetch failed (continuing without amenities):', amenitiesErr)
+          }
+        }
+      } catch (geoErr) {
+        console.error('[RUN] Geocoding failed:', geoErr)
+      }
+    }
+    
+    // Step 1b: Fetch news data
     if (address && config.newsApiKey) {
       try {
         console.log('[RUN] Fetching news data for address:', address)
-        const geo = await geocodeAddress(address)
         const postcode = extractPostcode(address, geo)
         
         // Fallback to full address if no postcode found
@@ -72,22 +100,31 @@ export default defineEventHandler(async (event) => {
           })),
         })
         
-        // Update address if provided
-        if (address && address !== row.address) {
-          await db
-            .update(analyses)
-            .set({ address, neighborhoodJson })
-            .where(eq(analyses.id, Number(id)))
-        } else {
-          await db
-            .update(analyses)
-            .set({ neighborhoodJson })
-            .where(eq(analyses.id, Number(id)))
-        }
-        console.log('[RUN] Neighborhood data stored')
+        // Update address, neighborhood, and amenities data
+        const updateData: Record<string, unknown> = { neighborhoodJson }
+        if (amenitiesJson) updateData.amenitiesJson = amenitiesJson
+        if (address && address !== row.address) updateData.address = address
+        
+        await db
+          .update(analyses)
+          .set(updateData)
+          .where(eq(analyses.id, Number(id)))
+        
+        console.log('[RUN] Neighborhood and amenities data stored')
       } catch (err) {
         console.error('[RUN] News fetch failed (continuing without news context):', err)
       }
+    } else if (amenitiesJson) {
+      // Store amenities even if no news API key
+      const updateData: Record<string, unknown> = { amenitiesJson }
+      if (address && address !== row.address) updateData.address = address
+      
+      await db
+        .update(analyses)
+        .set(updateData)
+        .where(eq(analyses.id, Number(id)))
+      
+      console.log('[RUN] Amenities data stored (no news API key)')
     }
 
     // Step 2: Upload file to Manus (read from database base64)
