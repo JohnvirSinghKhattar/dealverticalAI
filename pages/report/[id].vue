@@ -422,6 +422,55 @@ async function downloadPDF() {
     }
   }
   
+  // Key Investment Metrics
+  const hasKPIs = rentMultiplier.value || cashOnCashReturn.value || capRate.value || rentToInvestmentRatio.value
+  if (hasKPIs) {
+    if (yPos > pageHeight - 60) {
+      doc.addPage()
+      yPos = margin
+    }
+    
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(40)
+    doc.text('Key Investment Metrics', margin, yPos)
+    yPos += 8
+    doc.setTextColor(0)
+    
+    const kpiData: string[][] = []
+    if (rentMultiplier.value) kpiData.push(['Rent Multiplier', `${formatNumber(rentMultiplier.value, 1)}x`, 'Years to recover investment'])
+    if (cashOnCashReturn.value) kpiData.push(['Cash-on-Cash Return', formatPercent(cashOnCashReturn.value), 'Annual cash flow / Investment'])
+    if (capRate.value) kpiData.push(['Cap Rate', formatPercent(capRate.value), 'Net operating income / Price'])
+    if (rentToInvestmentRatio.value) kpiData.push(['Rent-to-Investment', formatPercent(rentToInvestmentRatio.value), 'Annual rent / Total investment'])
+    
+    if (kpiData.length > 0) {
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Metric', 'Value', 'Description']],
+        body: kpiData,
+        theme: 'striped',
+        headStyles: { 
+          fillColor: [139, 92, 246], 
+          textColor: 255,
+          fontSize: 11,
+          fontStyle: 'bold'
+        },
+        styles: { 
+          fontSize: 9.5,
+          cellPadding: 4
+        },
+        columnStyles: { 
+          0: { fontStyle: 'bold', cellWidth: 50 },
+          1: { halign: 'right', cellWidth: 30, fontStyle: 'bold' },
+          2: { cellWidth: contentWidth - 80, fontSize: 8, textColor: [100, 100, 100] }
+        },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        margin: { left: margin, right: margin }
+      })
+      yPos = (doc as any).lastAutoTable.finalY + 12
+    }
+  }
+  
   // Pros
   if (r?.pros?.length) {
     if (yPos > pageHeight - 60) {
@@ -566,6 +615,191 @@ async function downloadPDF() {
     doc.setTextColor(255, 255, 255)
     doc.text(`Recommendation: ${recText}`, margin + 5, yPos + 10)
     doc.setTextColor(0)
+    yPos += 20
+  }
+  
+  // Nearby Amenities
+  if (amenities.value) {
+    const am = amenities.value
+    const hasAmenities = am.schools?.length || am.groceryStores?.length || am.doctors?.length || 
+                        am.pharmacies?.length || am.publicTransport?.length || am.parks?.length ||
+                        am.restaurants?.length || am.banks?.length
+    
+    if (hasAmenities) {
+      doc.addPage()
+      yPos = margin
+      
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(40)
+      doc.text('Nearby Amenities', margin, yPos)
+      yPos += 6
+      
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(100)
+      doc.text('Distances calculated from property location (2km radius)', margin, yPos)
+      yPos += 10
+      doc.setTextColor(0)
+      
+      // Quick Summary
+      const summaryData: string[][] = []
+      if (am.schools?.length) summaryData.push(['🏫 Nearest School', formatDistance(am.schools[0].distance)])
+      if (am.groceryStores?.length) summaryData.push(['🛒 Nearest Grocery', formatDistance(am.groceryStores[0].distance)])
+      if (am.doctors?.length) summaryData.push(['🏥 Nearest Doctor', formatDistance(am.doctors[0].distance)])
+      if (am.pharmacies?.length) summaryData.push(['💊 Nearest Pharmacy', formatDistance(am.pharmacies[0].distance)])
+      if (am.publicTransport?.length) summaryData.push(['🚌 Nearest Transit', formatDistance(am.publicTransport[0].distance)])
+      if (am.parks?.length) summaryData.push(['🌳 Nearest Park', formatDistance(am.parks[0].distance)])
+      
+      if (summaryData.length > 0) {
+        autoTable(doc, {
+          startY: yPos,
+          head: [],
+          body: summaryData,
+          theme: 'plain',
+          styles: { 
+            fontSize: 10, 
+            cellPadding: 3,
+            lineColor: [240, 240, 240],
+            lineWidth: 0.1
+          },
+          columnStyles: { 
+            0: { fontStyle: 'bold', cellWidth: 60, textColor: [40, 40, 40] },
+            1: { cellWidth: contentWidth - 60, halign: 'right', fontStyle: 'bold', textColor: [20, 184, 166] }
+          },
+          margin: { left: margin, right: margin }
+        })
+        yPos = (doc as any).lastAutoTable.finalY + 10
+      }
+      
+      // Detailed Lists
+      const amenityCategories = [
+        { data: am.schools, title: '🏫 Schools & Kindergartens', limit: 5 },
+        { data: am.groceryStores, title: '🛒 Grocery Stores', limit: 5 },
+        { data: am.doctors, title: '🏥 Doctors & Clinics', limit: 5 },
+        { data: am.pharmacies, title: '💊 Pharmacies', limit: 5 },
+        { data: am.publicTransport, title: '🚌 Public Transport', limit: 5 },
+        { data: am.parks, title: '🌳 Parks & Playgrounds', limit: 5 },
+        { data: am.restaurants, title: '🍽️ Restaurants & Cafés', limit: 5 },
+        { data: am.banks, title: '🏦 Banks & ATMs', limit: 5 }
+      ]
+      
+      for (const category of amenityCategories) {
+        if (category.data?.length) {
+          if (yPos > pageHeight - 50) {
+            doc.addPage()
+            yPos = margin
+          }
+          
+          doc.setFontSize(12)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(40)
+          doc.text(category.title, margin, yPos)
+          yPos += 6
+          doc.setTextColor(0)
+          
+          const amenityData = category.data.slice(0, category.limit).map(item => [
+            item.name,
+            formatDistance(item.distance)
+          ])
+          
+          autoTable(doc, {
+            startY: yPos,
+            head: [],
+            body: amenityData,
+            theme: 'plain',
+            styles: { 
+              fontSize: 9, 
+              cellPadding: 2.5,
+              textColor: [60, 60, 60]
+            },
+            columnStyles: { 
+              0: { cellWidth: contentWidth - 30 },
+              1: { cellWidth: 30, halign: 'right', fontStyle: 'bold', textColor: [20, 184, 166] }
+            },
+            margin: { left: margin + 3, right: margin }
+          })
+          yPos = (doc as any).lastAutoTable.finalY + 8
+        }
+      }
+      
+      // Data attribution
+      doc.setFontSize(7)
+      doc.setTextColor(150)
+      const attribution = `Data from OpenStreetMap • Updated ${am.fetchedAt ? new Date(am.fetchedAt).toLocaleDateString('en-GB') : 'recently'}`
+      doc.text(attribution, pageWidth - margin, yPos, { align: 'right' })
+    }
+  }
+  
+  // Neighborhood Intelligence
+  if (n?.news?.length) {
+    doc.addPage()
+    yPos = margin
+    
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(40)
+    doc.text('Neighborhood Intelligence', margin, yPos)
+    yPos += 6
+    
+    if (n.address) {
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(100)
+      doc.text(n.address, margin, yPos)
+      yPos += 10
+    } else {
+      yPos += 8
+    }
+    doc.setTextColor(0)
+    
+    const newsData = n.news.map(item => {
+      const sentiment = item.sentiment ? item.sentiment.charAt(0).toUpperCase() + item.sentiment.slice(1) : ''
+      const date = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : ''
+      return [
+        item.title,
+        sentiment,
+        date
+      ]
+    })
+    
+    autoTable(doc, {
+      startY: yPos,
+      head: [['News Title', 'Sentiment', 'Date']],
+      body: newsData,
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [147, 51, 234], 
+        textColor: 255,
+        fontSize: 10,
+        fontStyle: 'bold'
+      },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 4,
+        lineColor: [240, 240, 240],
+        lineWidth: 0.1
+      },
+      columnStyles: { 
+        0: { cellWidth: contentWidth - 50 },
+        1: { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
+        2: { cellWidth: 25, halign: 'center', fontSize: 8, textColor: [100, 100, 100] }
+      },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+      margin: { left: margin, right: margin },
+      didParseCell: function(data) {
+        if (data.column.index === 1 && data.cell.section === 'body') {
+          const sentiment = data.cell.text[0]?.toLowerCase()
+          if (sentiment === 'positive') {
+            data.cell.styles.textColor = [34, 197, 94]
+          } else if (sentiment === 'negative') {
+            data.cell.styles.textColor = [239, 68, 68]
+          } else if (sentiment === 'neutral') {
+            data.cell.styles.textColor = [107, 114, 128]
+          }
+        }
+      }
+    })
   }
   
   // Save PDF
