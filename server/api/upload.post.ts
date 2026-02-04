@@ -1,4 +1,4 @@
-const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
+const MAX_SIZE = 50 * 1024 * 1024 // 50 MB
 
 export default defineEventHandler(async (event) => {
   try {
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: 'Only PDF files are allowed' })
     }
     if (file.data.length > MAX_SIZE) {
-      throw createError({ statusCode: 400, message: 'File too large (max 10 MB)' })
+      throw createError({ statusCode: 400, message: 'File too large (max 80 MB)' })
     }
 
     // Store file as base64 in database (no filesystem writes for Vercel compatibility)

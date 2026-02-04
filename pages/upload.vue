@@ -12,8 +12,8 @@ async function onFileChange(e: Event) {
     error.value = 'Only PDF files are allowed.'
     return
   }
-  if (f.size > 10 * 1024 * 1024) {
-    error.value = 'File size must be 10 MB or less.'
+  if (f.size > 80 * 1024 * 1024) {
+    error.value = 'File size must be 80 MB or less.'
     return
   }
   error.value = ''
@@ -118,7 +118,7 @@ async function submit() {
           Property Exposé (PDF)
           <span class="text-red-500">*</span>
         </label>
-        <p class="text-xs text-gray-500 mb-3">Upload your German property brochure or exposé document (max 10 MB)</p>
+        <p class="text-xs text-gray-500 mb-3">Upload your German property brochure or exposé document (max 50 MB)</p>
         <div class="relative">
           <input
             type="file"
