@@ -118,7 +118,7 @@ async function submit() {
           Property Exposé (PDF)
           <span class="text-red-500">*</span>
         </label>
-        <p class="text-xs text-gray-500 mb-3">Upload your German property brochure or exposé document (max 50 MB)</p>
+        <p class="text-xs text-gray-500 mb-3">Upload your German property brochure or exposé document (max 80 MB)</p>
         <div class="relative">
           <input
             type="file"
